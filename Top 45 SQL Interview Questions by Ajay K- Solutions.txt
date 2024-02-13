@@ -1,0 +1,331 @@
+1.
+select p.firstName,P.lastName,A.city,A.state
+from Person P 
+left join Address A on p.personId=A.Personid;
+
+
+2.
+select max(salary) as SecondHighestSalary from employee  where salary <(select max(salary) from employee);
+
+3.
+CREATE FUNCTION getNthHighestSalary(N INT) RETURNS INT
+BEGIN
+set N=N-1;
+  RETURN (
+        SELECT DISTINCT(salary) from Employee order by salary DESC
+      LIMIT 1 OFFSET N
+);
+END
+
+4.
+SELECT 
+    score,
+    DENSE_RANK() OVER (ORDER BY Score DESC) AS 'rank'
+FROM 
+    scores
+order by score desc;
+
+
+5.
+SELECT DISTINCT l2.Num AS ConsecutiveNums
+FROM Logs l1
+JOIN Logs l2 ON l2.Id - l1.Id = 1
+JOIN Logs l3 ON l3.Id - l2.Id = 1
+WHERE l1.Num = l2.Num AND l3.Num = l2.Num;
+
+6.
+select a.Name as Employee
+from Employee a join Employee as b
+on a.ManagerId = b.Id
+and a.Salary > b.Salary
+
+7.
+SELECT email
+FROM person
+GROUP BY email
+HAVING COUNT(*) > 1;
+
+8.
+SELECT c.Name as Customers
+FROM Customers c
+WHERE c.id not in (
+SELECT o.CustomerId FROM Orders o
+);
+
+9.
+SELECT Department.Name AS Department, Employee.Name AS Employee, Max(Salary) OVER (PARTITION BY Department ORDER BY Salary) AS Salary
+FROM Employee JOIN Department ON Employee.DepartmentId = Department.Id
+
+10.
+with rankedtable as(
+    select 
+        d.name as Department,
+        e.name as Employee,
+        e.Salary as Salary,
+        DENSE_RANK() OVER (PARTITION BY d.id ORDER BY e.Salary DESC) AS Salary_rank
+    from Department d 
+    join employee e on d.id=e.departmentID 
+)
+select Department,Employee,Salary
+from rankedtable
+where salary_rank<4
+ORDER BY Department, Salary DESC;
+
+11.
+delete from person 
+where id not in 
+(select id from
+    (select min(id) as id, email from person group by email) ids);
+
+12.
+select w2.id from weather w1 join weather w2
+on w1.temperature<w2.temperature
+and datediff(w1.recordDate,w2.recordDate)=-1;
+
+13.
+select request_at as Day,
+round(sum(case when status='cancelled_by_driver'
+                or status='cancelled_by_client'
+                then 1 else 0 end )/count(*),2) as 'Cancellation Rate'
+from trips 
+where client_id in (select users_id from users where banned='NO')
+And 
+driver_id in (select users_id from users where banned='No')
+group by day 
+HAVING Day Between "2013-10-01" AND "2013-10-03"
+
+14.
+select name from Customer
+where (referee_id!=2 or referee_id is null);
+
+15.
+SELECT customer_number 
+FROM orders
+GROUP BY customer_number
+ORDER BY COUNT(customer_number) DESC 
+LIMIT 1;
+
+16.
+SELECT name, population, area
+FROM world
+WHERE (area >= 3000000 or population >= 25000000);
+
+17.
+SELECT class
+FROM Courses
+GROUP BY class
+having COUNT(student)>=5
+ORDER BY COUNT(student) DESC ;
+
+18.
+SELECT ID
+    , visit_date
+    , people
+FROM (
+    SELECT ID
+        , visit_date
+        , people
+        , LEAD(people, 1) OVER (ORDER BY id) nxt
+        , LEAD(people, 2) OVER (ORDER BY id) nxt2
+        , LAG(people, 1) OVER (ORDER BY id) pre
+        , LAG(people, 2) OVER (ORDER BY id) pre2
+    FROM Stadium
+) cte 
+WHERE (cte.people >= 100 AND cte.nxt >= 100 AND cte.nxt2 >= 100) 
+    OR (cte.people >= 100 AND cte.nxt >= 100 AND cte.pre >= 100)  
+    OR (cte.people >= 100 AND cte.pre >= 100 AND cte.pre2 >= 100)
+
+19.
+select s.name from salesperson s where s.sales_id not in
+(
+select o.sales_id from orders o join company c on c.com_id=o.com_id where c.name='RED'
+)
+
+20.
+select distinct t.id,
+case
+    when t.p_id is null then 'Root'
+    when child.id is null then 'Leaf'
+    else 'Inner'
+end as Type
+from tree t
+left join tree child on child.p_id=t.id;
+
+21.
+select id, movie, description, rating from Cinema
+where id%2<>0 and description<>'boring'
+order by rating desc;
+
+22.
+select id, 
+coalesce(case when id%2=0 then lag(student) over() else lead(student) over() end, student) 
+as student
+from seat
+
+23.
+update salary
+    set sex=
+    case when sex= 'm' then 'f'
+    else 'm'
+end;
+
+24.
+SELECT actor_id, director_id
+FROM ActorDirector
+GROUP BY actor_id, director_id
+having count(timestamp)>=3;
+
+25.
+SELECT p.product_id,p.product_name
+FROM product p
+left join sales s on s.product_id=p.product_id
+GROUP BY S.product_id 
+HAVING MIN(S.sale_date) >= "2019-01-01" AND MAX(S.sale_date) <= "2019-03-31";
+
+26.
+select player_id, min(event_date) as first_login
+from Activity
+group by player_id;
+
+27.
+select activity_date as day, count(distinct user_id) as active_users
+from activity
+WHERE activity_date >= '2019-06-28' AND activity_date <= '2019-07-27' 
+group by day;
+
+28.
+SELECT DISTINCT author_id AS id
+FROM views
+where author_id=viewer_id
+order by id;
+
+29.
+select u.user_id as buyer_id,U.join_date,count(o.order_id) as 'orders_in_2019'
+from Users u
+left join orders o on U.user_id=o.buyer_id and YEAR(order_date)='2019'
+group by u.user_id  
+order by u.user_id;
+
+30.
+SELECT id,
+       SUM(CASE WHEN month = 'Jan' THEN revenue ELSE null END) AS Jan_Revenue,
+       SUM(CASE WHEN month = 'Feb' THEN revenue ELSE null END) AS Feb_Revenue,
+       SUM(CASE WHEN month = 'Mar' THEN revenue ELSE null END) AS Mar_Revenue,
+       SUM(CASE WHEN month = 'Apr' THEN revenue ELSE null END) AS Apr_Revenue,
+       SUM(CASE WHEN month = 'May' THEN revenue ELSE null END) AS May_Revenue,
+       SUM(CASE WHEN month = 'Jun' THEN revenue ELSE null END) AS Jun_Revenue,
+       SUM(CASE WHEN month = 'Jul' THEN revenue ELSE null END) AS Jul_Revenue,
+       SUM(CASE WHEN month = 'Aug' THEN revenue ELSE null END) AS Aug_Revenue,
+       SUM(CASE WHEN month = 'Sep' THEN revenue ELSE null END) AS Sep_Revenue,
+       SUM(CASE WHEN month = 'Oct' THEN revenue ELSE null END) AS Oct_Revenue,
+       SUM(CASE WHEN month = 'Nov' THEN revenue ELSE null END) AS Nov_Revenue,
+       SUM(CASE WHEN month = 'Dec' THEN revenue ELSE null END) AS Dec_Revenue
+FROM Department
+GROUP BY id;
+
+31.
+select stock_name, 
+   SUM(
+            CASE 
+                WHEN operation = 'BUY' THEN -price
+      else price
+       end
+      )as capital_gain_loss      
+from Stocks
+group by stock_name;
+
+32.
+select u.name, 
+    sum(case when r.distance then r.distance else 0 end) as travelled_distance
+from users u
+left join rides r on u.id=r.user_id
+group by r.user_id
+order by travelled_distance desc,u.name asc;
+
+33.
+select sell_date, count(distinct product) as num_sold,GROUP_CONCAT(distinct product) as "products" 
+from Activities
+group by sell_date 
+order by sell_date, products;
+
+34.
+select patient_id, patient_name, group_concat(conditions SEPARATOR '  ')  as conditions
+from
+patients where conditions like'% DIAB1%' or conditions LIKE 'DIAB1%'
+group by patient_id
+
+35.
+SELECT v.customer_id, COUNT(v.visit_id) AS count_no_trans
+FROM visits v
+LEFT JOIN transactions t 
+ON v.visit_id = t.visit_id
+where t.transaction_id is Null
+GROUP BY v.customer_id
+
+36.
+ select u.name, 
+    SUM(amount) AS balance
+from users u
+left join transactions t on u.account=t.account
+group by u.name
+having balance>10000
+order by balance desc,u.name asc;
+
+37.
+Select user_id,CONCAT(UPPER(SUBSTRING(name,1,1)),LOWER(SUBSTRING(name,2))) AS name from Users
+order by user_id;
+
+38.
+select date_id,make_name, count(distinct lead_id) as unique_leads,
+count(distinct partner_id) as unique_partners
+from dailysales
+group by date_id,make_name;
+
+39.
+select user_id,count(*) as followers_count
+from followers
+group by user_id
+order by user_id;
+
+40.
+select event_day as day, emp_id,
+SUM(out_time-in_time) as total_time
+from employees
+group by day,emp_id;
+
+41.
+select product_id from Products
+where (low_fats='Y' and recyclable='Y')
+
+42.
+SELECT product_id, 'store1' AS store, store1 AS price FROM Products WHERE store1 IS NOT NULL
+UNION
+SELECT product_id, 'store2' AS store, store2 AS price FROM Products WHERE store2 IS NOT NULL
+UNION
+SELECT product_id, 'store3' AS store, store3 AS price FROM Products WHERE store3 IS NOT NULL;
+
+43.
+select employee_id,
+case when employee_id%2=0 then 0
+    when LEFT(name,1) ='M' then 0
+    else salary
+end as bonus
+from employees
+order by employee_id
+
+44.
+select user_id,max(time_stamp) as last_stamp
+from Logins
+where year(time_stamp)=2020
+group by user_id
+
+45.
+select employee_id from employees where employee_id not in (select employee_id from Salaries)
+union 
+select employee_id from salaries where employee_id not in (select employee_id from employees)
+order by employee_id
+
+
+
+
+
